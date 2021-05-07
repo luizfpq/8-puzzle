@@ -19,9 +19,9 @@ def main():
 
 
 escolhe_algoritmo = {
-    '1': ast,
-    '2': dfs,
-    '3': bfs
+    '1': a_estrela,
+    '2': bep,
+    '3': bel
 }
 
 if __name__ == '__main__':

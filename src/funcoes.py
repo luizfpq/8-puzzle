@@ -19,8 +19,10 @@ tamanho_max_fronteira = 0
 movimentos = list()
 custos = set()
 
-
-def bfs(estado_inicial):
+# Busca em Amplitude
+# Breadth-First Search - BFS
+# https://pt.wikipedia.org/wiki/Busca_em_largura
+def bel(estado_inicial):
 
     global tamanho_max_fronteira, no_esperado, profundidade_maxima
 
@@ -49,8 +51,10 @@ def bfs(estado_inicial):
         if len(fila) > tamanho_max_fronteira:
             tamanho_max_fronteira = len(fila)
 
-
-def dfs(estado_inicial):
+# Busca em profundidade
+# Depth-First Search - DFS
+# https://pt.wikipedia.org/wiki/Busca_em_profundidade
+def bep(estado_inicial):
 
     global tamanho_max_fronteira, no_esperado, profundidade_maxima
 
@@ -79,8 +83,8 @@ def dfs(estado_inicial):
         if len(pilha) > tamanho_max_fronteira:
             tamanho_max_fronteira = len(pilha)
 
-
-def ast(estado_inicial):
+#A-Estrela
+def a_estrela(estado_inicial):
 
     global tamanho_max_fronteira, no_esperado, profundidade_maxima
 
