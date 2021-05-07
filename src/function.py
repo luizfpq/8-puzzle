@@ -2,315 +2,262 @@ import argparse
 import timeit
 import resource
 from collections import deque
-from src.state import State
+from src.estado import Estado
 from heapq import heappush, heappop, heapify
 import itertools
 
-goal_state = [0, 1, 2, 3, 4, 5, 6, 7, 8]
-goal_node = State
-initial_state = list()
-items_len = 0
-items_side = 0
+estado_esperado = [1, 2, 3, 4, 5, 6, 7, 8, 0]
+no_esperado = Estado
+estado_inicial = list()
+tamanho_quadro = 0
+lado_quadro = 0
 
-nodes_expanded = 0
-max_search_depth = 0
-max_frontier_size = 0
+nos_expandidos = 0
+profundidade_maxima = 0
+tamanho_max_fronteira = 0
 
-moves = list()
-costs = set()
-
-
-def bfs(start_state):
-
-    global max_frontier_size, goal_node, max_search_depth
-
-    explored, queue = set(), deque([State(start_state, None, None, 0, 0, 0)])
-
-    while queue:
-
-        node = queue.popleft()
-
-        explored.add(node.map)
-
-        if node.state == goal_state:
-            goal_node = node
-            return queue
-
-        neighbors = expand(node)
-
-        for neighbor in neighbors:
-            if neighbor.map not in explored:
-                queue.append(neighbor)
-                explored.add(neighbor.map)
-
-                if neighbor.depth > max_search_depth:
-                    max_search_depth += 1
-
-        if len(queue) > max_frontier_size:
-            max_frontier_size = len(queue)
+movimentos = list()
+custos = set()
 
 
-def dfs(start_state):
+def bfs(estado_inicial):
 
-    global max_frontier_size, goal_node, max_search_depth
+    global tamanho_max_fronteira, no_esperado, profundidade_maxima
 
-    explored, stack = set(), list([State(start_state, None, None, 0, 0, 0)])
+    explorado, fila = set(), deque([Estado(estado_inicial, None, None, 0, 0, 0)])
 
-    while stack:
+    while fila:
 
-        node = stack.pop()
+        no = fila.popleft()
 
-        explored.add(node.map)
+        explorado.add(no.map)
 
-        if node.state == goal_state:
-            goal_node = node
-            return stack
+        if no.estado == estado_esperado:
+            no_esperado = no
+            return fila
 
-        neighbors = reversed(expand(node))
+        vizinhos = expande(no)
 
-        for neighbor in neighbors:
-            if neighbor.map not in explored:
-                stack.append(neighbor)
-                explored.add(neighbor.map)
+        for vizinho in vizinhos:
+            if vizinho.map not in explorado:
+                fila.append(vizinho)
+                explorado.add(vizinho.map)
 
-                if neighbor.depth > max_search_depth:
-                    max_search_depth += 1
+                if vizinho.profundidade > profundidade_maxima:
+                    profundidade_maxima += 1
 
-        if len(stack) > max_frontier_size:
-            max_frontier_size = len(stack)
+        if len(fila) > tamanho_max_fronteira:
+            tamanho_max_fronteira = len(fila)
 
 
-def ast(start_state):
+def dfs(estado_inicial):
 
-    global max_frontier_size, goal_node, max_search_depth
+    global tamanho_max_fronteira, no_esperado, profundidade_maxima
 
-    explored, heap, heap_entry, counter = set(), list(), {}, itertools.count()
+    explorado, pilha = set(), list([Estado(estado_inicial, None, None, 0, 0, 0)])
 
-    key = h(start_state)
+    while pilha:
 
-    root = State(start_state, None, None, 0, 0, key)
+        no = pilha.pop()
 
-    entry = (key, 0, root)
+        explorado.add(no.map)
+
+        if no.estado == estado_esperado:
+            no_esperado = no
+            return pilha
+
+        vizinhos = reversed(expande(no))
+
+        for vizinho in vizinhos:
+            if vizinho.map not in explorado:
+                pilha.append(vizinho)
+                explorado.add(vizinho.map)
+
+                if vizinho.profundidade > profundidade_maxima:
+                    profundidade_maxima += 1
+
+        if len(pilha) > tamanho_max_fronteira:
+            tamanho_max_fronteira = len(pilha)
+
+
+def ast(estado_inicial):
+
+    global tamanho_max_fronteira, no_esperado, profundidade_maxima
+
+    explorado, heap, entrada_heap, contador = set(), list(), {}, itertools.count()
+
+    chave = h(estado_inicial)
+
+    root = Estado(estado_inicial, None, None, 0, 0, chave)
+
+    entry = (chave, 0, root)
 
     heappush(heap, entry)
 
-    heap_entry[root.map] = entry
+    entrada_heap[root.map] = entry
 
     while heap:
 
-        node = heappop(heap)
+        no = heappop(heap)
 
-        explored.add(node[2].map)
+        explorado.add(no[2].map)
 
-        if node[2].state == goal_state:
-            goal_node = node[2]
+        if no[2].estado == estado_esperado:
+            no_esperado = no[2]
             return heap
 
-        neighbors = expand(node[2])
+        vizinhos = expande(no[2])
 
-        for neighbor in neighbors:
+        for vizinho in vizinhos:
 
-            neighbor.key = neighbor.cost + h(neighbor.state)
+            vizinho.chave = vizinho.custo + h(vizinho.estado)
 
-            entry = (neighbor.key, neighbor.move, neighbor)
+            entry = (vizinho.chave, vizinho.move, vizinho)
 
-            if neighbor.map not in explored:
+            if vizinho.map not in explorado:
 
                 heappush(heap, entry)
 
-                explored.add(neighbor.map)
+                explorado.add(vizinho.map)
 
-                heap_entry[neighbor.map] = entry
+                entrada_heap[vizinho.map] = entry
 
-                if neighbor.depth > max_search_depth:
-                    max_search_depth += 1
+                if vizinho.profundidade > profundidade_maxima:
+                    profundidade_maxima += 1
 
-            elif neighbor.map in heap_entry and neighbor.key < heap_entry[neighbor.map][2].key:
+            elif vizinho.map in entrada_heap and vizinho.chave < entrada_heap[vizinho.map][2].chave:
 
-                hindex = heap.index((heap_entry[neighbor.map][2].key,
-                                     heap_entry[neighbor.map][2].move,
-                                     heap_entry[neighbor.map][2]))
+                hindex = heap.index((entrada_heap[vizinho.map][2].chave,
+                                     entrada_heap[vizinho.map][2].move,
+                                     entrada_heap[vizinho.map][2]))
 
                 heap[int(hindex)] = entry
 
-                heap_entry[neighbor.map] = entry
+                entrada_heap[vizinho.map] = entry
 
                 heapify(heap)
 
-        if len(heap) > max_frontier_size:
-            max_frontier_size = len(heap)
+        if len(heap) > tamanho_max_fronteira:
+            tamanho_max_fronteira = len(heap)
 
 
-def ida(start_state):
+def expande(no):
 
-    global costs
+    global nos_expandidos
+    nos_expandidos += 1
 
-    threshold = h(start_state)
+    vizinhos = list()
 
-    while 1:
-        response = dls_mod(start_state, threshold)
+    vizinhos.append(Estado(move(no.estado, 1), no, 1, no.profundidade + 1, no.custo + 1, 0))
+    vizinhos.append(Estado(move(no.estado, 2), no, 2, no.profundidade + 1, no.custo + 1, 0))
+    vizinhos.append(Estado(move(no.estado, 3), no, 3, no.profundidade + 1, no.custo + 1, 0))
+    vizinhos.append(Estado(move(no.estado, 4), no, 4, no.profundidade + 1, no.custo + 1, 0))
 
-        if type(response) is list:
-            return response
-            break
+    nos = [vizinho for vizinho in vizinhos if vizinho.estado]
 
-        threshold = response
-
-        costs = set()
-
-
-def dls_mod(start_state, threshold):
-
-    global max_frontier_size, goal_node, max_search_depth, costs
-
-    explored, stack = set(), list([State(start_state, None, None, 0, 0, threshold)])
-
-    while stack:
-
-        node = stack.pop()
-
-        explored.add(node.map)
-
-        if node.state == goal_state:
-            goal_node = node
-            return stack
-
-        if node.key > threshold:
-            costs.add(node.key)
-
-        if node.depth < threshold:
-
-            neighbors = reversed(expand(node))
-
-            for neighbor in neighbors:
-                if neighbor.map not in explored:
-
-                    neighbor.key = neighbor.cost + h(neighbor.state)
-                    stack.append(neighbor)
-                    explored.add(neighbor.map)
-
-                    if neighbor.depth > max_search_depth:
-                        max_search_depth += 1
-
-            if len(stack) > max_frontier_size:
-                max_frontier_size = len(stack)
-
-    return min(costs)
+    return nos
 
 
-def expand(node):
+def move(estado, posicao):
 
-    global nodes_expanded
-    nodes_expanded += 1
+    novo_estado = estado[:]
 
-    neighbors = list()
+    index = novo_estado.index(0)
 
-    neighbors.append(State(move(node.state, 1), node, 1, node.depth + 1, node.cost + 1, 0))
-    neighbors.append(State(move(node.state, 2), node, 2, node.depth + 1, node.cost + 1, 0))
-    neighbors.append(State(move(node.state, 3), node, 3, node.depth + 1, node.cost + 1, 0))
-    neighbors.append(State(move(node.state, 4), node, 4, node.depth + 1, node.cost + 1, 0))
+    if posicao == 1:  # Cima
 
-    nodes = [neighbor for neighbor in neighbors if neighbor.state]
+        if index not in range(0, lado_quadro):
 
-    return nodes
+            temp = novo_estado[index - lado_quadro]
+            novo_estado[index - lado_quadro] = novo_estado[index]
+            novo_estado[index] = temp
 
-
-def move(state, position):
-
-    new_state = state[:]
-
-    index = new_state.index(0)
-
-    if position == 1:  # Up
-
-        if index not in range(0, items_side):
-
-            temp = new_state[index - items_side]
-            new_state[index - items_side] = new_state[index]
-            new_state[index] = temp
-
-            return new_state
+            return novo_estado
         else:
             return None
 
-    if position == 2:  # Down
+    if posicao == 2:  # Baixo
 
-        if index not in range(items_len - items_side, items_len):
+        if index not in range(tamanho_quadro - lado_quadro, tamanho_quadro):
 
-            temp = new_state[index + items_side]
-            new_state[index + items_side] = new_state[index]
-            new_state[index] = temp
+            temp = novo_estado[index + lado_quadro]
+            novo_estado[index + lado_quadro] = novo_estado[index]
+            novo_estado[index] = temp
 
-            return new_state
+            return novo_estado
         else:
             return None
 
-    if position == 3:  # Left
+    if posicao == 3:  # Esquerda
 
-        if index not in range(0, items_len, items_side):
+        if index not in range(0, tamanho_quadro, lado_quadro):
 
-            temp = new_state[index - 1]
-            new_state[index - 1] = new_state[index]
-            new_state[index] = temp
+            temp = novo_estado[index - 1]
+            novo_estado[index - 1] = novo_estado[index]
+            novo_estado[index] = temp
 
-            return new_state
+            return novo_estado
         else:
             return None
 
-    if position == 4:  # Right
+    if posicao == 4:  # Direita
 
-        if index not in range(items_side - 1, items_len, items_side):
+        if index not in range(lado_quadro - 1, tamanho_quadro, lado_quadro):
 
-            temp = new_state[index + 1]
-            new_state[index + 1] = new_state[index]
-            new_state[index] = temp
+            temp = novo_estado[index + 1]
+            novo_estado[index + 1] = novo_estado[index]
+            novo_estado[index] = temp
 
-            return new_state
+            return novo_estado
         else:
             return None
 
 
-def h(state):
+def h(estado):
 
-    return sum(abs(b % items_side - g % items_side) + abs(b//items_side - g//items_side)
-               for b, g in ((state.index(i), goal_state.index(i)) for i in range(1, items_len)))
+    return sum(abs(b % lado_quadro - g % lado_quadro) + abs(b//lado_quadro - g//lado_quadro)
+               for b, g in ((estado.index(i), estado_esperado.index(i)) for i in range(1, tamanho_quadro)))
 
 
-def backtrace():
+def passos():
 
-    current_node = goal_node
+    no_atual = no_esperado
 
-    while initial_state != current_node.state:
+    while estado_inicial != no_atual.estado:
 
-        if current_node.move == 1:
-            movement = 'Sobe'
-        elif current_node.move == 2:
-            movement = 'Desce'
-        elif current_node.move == 3:
-            movement = 'Esquerda'
+        if no_atual.move == 1:
+            movimento = 'Cima'
+        elif no_atual.move == 2:
+            movimento = 'Baixo'
+        elif no_atual.move == 3:
+            movimento = 'Esquerda'
         else:
-            movement = 'Direita'
+            movimento = 'Direita'
 
-        moves.insert(0, movement)
-        #show movement
-        print("{} ".format(movement), end="")
-        current_node = current_node.parent
-    #force line break
-    print()
-    return moves
+        movimentos.insert(0, movimento)
+        no_atual = no_atual.pai
+
+    return movimentos
 
 
+def escreve_arquivo(fronteira, time):
+
+    global movimentos
+
+    movimentos = passos()
+    print("Caminho percorrido:\n ", str(movimentos))
+    print("Movimentos executados: ", str(len(movimentos)))
 
 
-def read(configuration):
+def read(combinacao):
 
-    global items_len, items_side
+    global tamanho_quadro, lado_quadro
 
-    data = configuration.split(",")
+    data = combinacao.split(",")
 
     for element in data:
-        initial_state.append(int(element))
+        estado_inicial.append(int(element))
 
-    items_len = len(initial_state)
+    tamanho_quadro = len(estado_inicial)
 
-    items_side = int(items_len ** 0.5)
+    lado_quadro = int(tamanho_quadro ** 0.5)

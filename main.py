@@ -3,18 +3,22 @@ from src.function import *
 
 def main():
 
-    algorithm = input("\n Escolha o Algoritmo: \n 1) A_Estrela \t 2) Profundidade\t 3) Largura\n ")
-    items = input("\n\nEntre com uma sequencia numerica separada por virgula, entre 0 e 9.\n 0 - marca o quadro vazio\n ")
+    algoritmo = input("\n Escolha o Algoritmo: \n 1) A_Estrela \t 2) Profundidade\t 3) Largura\n ")
+    quadro = input("\n\nEntre com uma sequencia numerica separada por virgula, entre 0 e 8.\n 0 - marca o quadro vazio\n ")
     
-    read(items)
+    read(quadro)
 
-    function = choose_algorithm[algorithm]
-    frontier = function(initial_state)
+    function = escolhe_algoritmo[algoritmo]
+    inicial = timeit.default_timer()
 
-    backtrace()
+    fronteira = function(estado_inicial)
+
+    final = timeit.default_timer()
+
+    escreve_arquivo(fronteira, final-inicial)
 
 
-choose_algorithm = {
+escolhe_algoritmo = {
     '1': ast,
     '2': dfs,
     '3': bfs
